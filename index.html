@@ -187,14 +187,17 @@
          }
 
          function downloadImages() {
-           let prefix= prompt("Please enter a prefix", "image-");
+            let prefix = prompt("Please enter a prefix", "image-");
 
             var images = document.getElementsByTagName("canvas");
             Array.from(images).forEach((c, index) => {
-               canvasDownload(c, prefix + (index + 1) + ".png")
-            })
+               canvasDownload(c, prefix + (index + 1) + ".png");
+            });
          }
 
+         window.onbeforeunload = function () {
+            return "Are you sure you want to leave?";
+         };
       </script>
    </body>
 </html>
