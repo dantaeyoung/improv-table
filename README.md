@@ -14,7 +14,7 @@
 - S: save images
 
 #### To-dos
-- [] add slider to change image sizes
-- [] play around with it
-- [] think about not making this one single html file, then decide against it
-- [] think about cleaning up the code, then decide against it
+- [ ] add slider to change image sizes
+- [ ] play around with it
+- [ ] think about not making this one single html file, then decide against it
+- [ ] think about cleaning up the code, then decide against it
