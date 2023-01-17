@@ -5,13 +5,14 @@
 
 ![screenshot](screenshot.png)
 
+## How to use:
 
-
-#### Notes
-- O: open camera
-  - Expects [Continuity Camera](https://support.apple.com/en-us/HT213244), and your phone's name to include the strong 'phone' in it.
-- C: capture frame (`spacebar` works as well)
-- S: save images
+- Press `O` to open camera. It tries to use your [phone as a webcam](https://support.apple.com/en-us/HT213244). Hopefully your phone has the word 'phone' in its name.
+- Attempt to explain with diagrams. 
+- Add more diagrams
+- Occasionally press `C` to capture an image.
+- Keep on going.
+- Save all your images with `S`.
 
 #### To-dos
 - [ ] add slider to change image sizes
