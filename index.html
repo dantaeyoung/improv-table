@@ -22,7 +22,7 @@
             max-width: 80vw;
             max-height: calc(50vh - 25px);
             object-fit: contain;
-            margin-top: 20px;
+            margin-bottom: 20px;
             padding-right: 15px;
          }
 
@@ -33,7 +33,7 @@
 
          #ui {
             position: fixed;
-            top: 10px;
+            bottom: 10px;
             left: 10px;
          }
 
@@ -48,9 +48,10 @@
             font-size: 1em;
          }
 
+
          #videocontainer {
             position: fixed;
-            top: 10px;
+            bottom: 10px;
             right: 15px;
             pointer-events: none;
          }
@@ -61,13 +62,34 @@
             min-width: 100%;
             align-items: center;
             position: absolute;
-            bottom: 10px;
+            top: 10px;
             padding-right: 15px;
          }
 
          #logo {
             display: none;
          }
+
+
+         .big button#toggleBig {
+            background-color: white;
+            color: black;
+            border: 2px dotted black;
+         }
+
+         .big video {
+            max-width: 80vw;
+            max-height: calc(20vh - 25px);
+            object-fit: contain;
+         }
+         .big .savedimage {
+            max-width: 95vw;
+            max-height: calc(80vh - 25px);
+            object-fit: contain;
+            margin-bottom: 20px;
+            padding-right: 15px;
+         }
+
       </style>
    </head>
    <body>
@@ -81,6 +103,7 @@
          <button id="startBtn" onclick="openCam()">O</button>
          <button id="captureBtn" onclick="captureCam()">C</button>
          <button id="downloadBtn" onclick="downloadImages()">S</button>
+         <button id="toggleBig" onclick="toggleBig()">B</button>
       </div>
       <div id="videocontainer">
          <video id="videoCam"></video>
@@ -198,6 +221,11 @@
          window.onbeforeunload = function () {
             return "Are you sure you want to leave?";
          };
+
+
+         function toggleBig() {
+            document.body.classList.toggle("big");
+         }
       </script>
    </body>
 </html>
