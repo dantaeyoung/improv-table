@@ -1,6 +1,6 @@
 # Improv-Table
 
-## for improvisational presentations. 
+## a website for improvisational tabletop presentations. 
 
 ## use at: [dantaeyoung.github.io/improv-table](https://dantaeyoung.github.io/improv-table)
 
