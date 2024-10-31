@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenCV.js Warp Perspective Example</title>
+    <script async src="https://docs.opencv.org/4.x/opencv.js" type="text/javascript"></script>
+    <style>
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <h2>Warp Perspective Example using OpenCV.js</h2>
+    <input type="file" id="imageInput" accept="image/*">
+    <br><br>
+    <canvas id="canvasInput"></canvas>
+    <canvas id="canvasOutput"></canvas>
+
+    <script type="text/javascript">
+        let inputCanvas = document.getElementById('canvasInput');
+        let outputCanvas = document.getElementById('canvasOutput');
+        let inputContext = inputCanvas.getContext('2d');
+        
+        document.getElementById('imageInput').addEventListener('change', (event) => {
+            let file = event.target.files[0];
+            if (!file) {
+                return;
+            }
+            let img = new Image();
+            img.onload = function () {
+                inputCanvas.width = img.width;
+                inputCanvas.height = img.height;
+                outputCanvas.width = img.width;
+                outputCanvas.height = img.height;
+                inputContext.drawImage(img, 0, 0);
+                warpImage();
+            }
+            img.src = URL.createObjectURL(file);
+        });
+
+        function warpImage() {
+            let src = cv.imread(inputCanvas);
+            let dst = new cv.Mat();
+
+            // Define the four points of the source image to be transformed
+            let srcPoints = cv.matFromArray(4, 1, cv.CV_32FC2, [
+                0, 0,                      // Top-left corner
+                src.cols - 1, 0,           // Top-right corner
+                src.cols - 1, src.rows - 1, // Bottom-right corner
+                0, src.rows - 1            // Bottom-left corner
+            ]);
+
+            // Define the four points of the destination polygon (arbitrary quadrilateral)
+            let dstPoints = cv.matFromArray(4, 1, cv.CV_32FC2, [
+                50, 50,                    // Arbitrary position for top-left corner
+                src.cols - 100, 100,       // Top-right corner moved inward
+                src.cols - 50, src.rows - 50, // Bottom-right corner
+                100, src.rows - 100        // Bottom-left corner moved inward
+            ]);
+
+            // Calculate the perspective transformation matrix
+            let M = cv.getPerspectiveTransform(srcPoints, dstPoints);
+
+            // Apply warpPerspective
+            let dsize = new cv.Size(src.cols, src.rows);
+            cv.warpPerspective(src, dst, M, dsize, cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar());
+
+            // Blend the warped image with the original image using addWeighted
+            let blended = new cv.Mat();
+            cv.addWeighted(src, 0.5, dst, 0.5, 0.0, blended);
+
+            // Display the result
+            cv.imshow(outputCanvas, blended);
+
+            // Clean up
+            src.delete();
+            dst.delete();
+            srcPoints.delete();
+            dstPoints.delete();
+            M.delete();
+            blended.delete();
+        }
+    </script>
+</body>
+</html>
+
