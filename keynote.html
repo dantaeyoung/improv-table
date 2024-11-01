@@ -65,6 +65,8 @@
       }
     </style>
     <script src="js/helper.js" type="text/javascript"></script>
+    <script src="js/event-listeners.js" type="text/javascript"></script>
+    <script src="js/cv-logic.js" type="text/javascript"></script>
     <script src="js/camera.js" type="text/javascript"></script>
     <script src="js/control-keynote.js" type="text/javascript"></script>
     <script
@@ -75,7 +77,9 @@
     ></script>
     <script>
       let selectedColor = { h: 0, s: 0, v: 0 };
-      let threshold = 10;
+      let hueThreshold = 70;
+      let satThreshold = 70;
+      let valThreshold = 70;
       let fps = 8;
       let src = null;
       let hsv = null;
@@ -87,6 +91,7 @@
       let prevDecimalValue = -1;
       let prevDecimalTimeout;
       let rotateVideo = false;
+      let whiteBalanceVideo = false;
       let debugOutput = false;
       let presentationView = false;
 
@@ -95,75 +100,6 @@
         setupVideoDeviceSelection();
         startVideoStream();
         addEventListeners();
-      }
-
-      function addEventListeners() {
-        const video = document.getElementById("videoElement");
-        const colorPicker = document.getElementById("colorPicker");
-        const thresholdSlider = document.getElementById("thresholdSlider");
-        const thresholdValue = document.getElementById("thresholdValue");
-        const fpsSlider = document.getElementById("fpsSlider");
-        const fpsValue = document.getElementById("fpsValue");
-        const toggleProcessingButton = document.getElementById(
-          "toggleProcessingButton",
-        );
-        const rotateCheckbox = document.getElementById("rotateCheckbox");
-        const debugCheckbox = document.getElementById("debugCheckbox");
-        const presentCheckbox = document.getElementById("presentCheckbox");
-
-        document
-          .getElementById("deviceOptions")
-          .addEventListener("change", (event) => {
-            if (video.srcObject) {
-              video.srcObject.getTracks().forEach((track) => track.stop());
-            }
-            startVideoStream(event.target.value);
-          });
-
-        colorPicker.addEventListener("input", (event) => {
-          const rgb = hexToRgb(event.target.value);
-          selectedColor = rgbToHsv(rgb.r, rgb.g, rgb.b);
-        });
-
-        thresholdSlider.addEventListener("input", (event) => {
-          threshold = parseInt(event.target.value);
-          thresholdValue.innerText = threshold;
-        });
-
-        fpsSlider.addEventListener("input", (event) => {
-          fps = parseInt(event.target.value);
-          fpsValue.innerText = fps;
-        });
-
-        rotateCheckbox.addEventListener("change", (event) => {
-          rotateVideo = event.target.checked;
-        });
-
-        debugCheckbox.addEventListener("change", (event) => {
-          debugOutput = event.target.checked;
-        });
-
-        presentCheckbox.addEventListener("change", (event) => {
-          presentationView = event.target.checked;
-          if (presentationView) {
-            document.body.classList.add("presentationView");
-          } else {
-            document.body.classList.remove("presentationView");
-          }
-        });
-
-        video.addEventListener("click", handleVideoClick);
-        video.addEventListener("play", processFrame);
-
-        toggleProcessingButton.addEventListener("click", () => {
-          isProcessing = !isProcessing;
-          toggleProcessingButton.innerText = isProcessing
-            ? "Pause Processing"
-            : "Resume Processing";
-          if (isProcessing) {
-            processFrame();
-          }
-        });
       }
 
       function startVideoStream(deviceId = null) {
@@ -183,25 +119,40 @@
           });
       }
 
-      function handleVideoClick(event) {
-        const video = document.getElementById("videoElement");
-        const rawCanvas = document.getElementById("rawCanvas");
-        const rawContext = rawCanvas.getContext("2d", {
-          willReadFrequently: true,
-        });
-        const rect = video.getBoundingClientRect();
-        const x = event.clientX - rect.left;
-        const y = event.clientY - rect.top;
+      function whiteBalanceCorrection(src) {
+        // Assuming `src` is a cv.Mat (loaded from the canvas or other source)
 
-        rawContext.drawImage(video, 0, 0, rawCanvas.width, rawCanvas.height);
-        let imageData = rawContext.getImageData(x, y, 1, 1).data;
-        const rgb = { r: imageData[0], g: imageData[1], b: imageData[2] };
-        selectedColor = rgbToHsv(rgb.r, rgb.g, rgb.b);
-        document.getElementById("colorPicker").value = rgbToHex(
-          rgb.r,
-          rgb.g,
-          rgb.b,
-        );
+        // Step 1: Split the channels
+        let channels = new cv.MatVector();
+        cv.split(src, channels); // Splits into B, G, R channels
+
+        // Step 2: Calculate gain factors
+        let meanR = cv.mean(channels.get(2))[0];
+        let meanG = cv.mean(channels.get(1))[0];
+        let meanB = cv.mean(channels.get(0))[0];
+
+        let meanGray = (meanR + meanG + meanB) / 3.0;
+
+        let gainR = meanGray / meanR;
+        let gainG = meanGray / meanG;
+        let gainB = meanGray / meanB;
+
+        // Step 3: Adjust each channel by multiplying with the respective gain
+        channels.get(2).convertTo(channels.get(2), -1, gainR); // Red channel
+        channels.get(1).convertTo(channels.get(1), -1, gainG); // Green channel
+        channels.get(0).convertTo(channels.get(0), -1, gainB); // Blue channel
+
+        // Step 4: Merge the adjusted channels back
+        //        let balancedImage = new cv.Mat();
+        cv.merge(channels, src);
+
+        // Step 5: Display the result on the canvas
+        let canvas = document.getElementById("outputCanvas2");
+        cv.imshow(canvas, src);
+
+        // Cleanup
+        channels.delete();
+        //        balancedImage.delete();
       }
 
       function processFrame() {
@@ -224,6 +175,10 @@
           cv.rotate(src, src, cv.ROTATE_180);
         }
 
+        if (whiteBalanceVideo) {
+          whiteBalanceCorrection(src);
+        }
+
         hsv = new cv.Mat();
         mask = new cv.Mat();
         let output = new cv.Mat();
@@ -236,15 +191,15 @@
         cv.cvtColor(hsv, hsv, cv.COLOR_RGB2HSV);
 
         let lowerBound = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [
-          selectedColor.h - threshold,
-          Math.max(0, selectedColor.s - 50),
-          Math.max(0, selectedColor.v - 50),
+          selectedColor.h - hueThreshold,
+          Math.max(0, selectedColor.s - satThreshold),
+          Math.max(0, selectedColor.v - valThreshold),
           0,
         ]);
         let upperBound = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [
-          selectedColor.h + threshold,
-          Math.min(255, selectedColor.s + 50),
-          Math.min(255, selectedColor.v + 50),
+          selectedColor.h + hueThreshold,
+          Math.min(255, selectedColor.s + satThreshold),
+          Math.min(255, selectedColor.v + valThreshold),
           255,
         ]);
 
@@ -252,10 +207,14 @@
         cv.GaussianBlur(mask, output, new cv.Size(5, 5), 0);
         cv.cvtColor(output, output, cv.COLOR_GRAY2BGR);
 
-        //drawFiducialDots(mask, output);
-        src.copyTo(presentationOutput);
-        drawFiducialDots(mask, presentationOutput);
-        //drawIndexCardBoundingBox(src, gray, blurred, edges, output);
+        try {
+          //drawFiducialOutput(mask, output);
+          src.copyTo(presentationOutput);
+          drawFiducialOutput(mask, presentationOutput);
+          //drawIndexCardBoundingBox(src, gray, blurred, edges, output);
+        } catch (e) {
+          console.error("Error!", e);
+        }
 
         cv.imshow("outputCanvas", output);
         cv.imshow("presentationCanvas", presentationOutput);
@@ -283,101 +242,7 @@
         }, frameDelay);
       }
 
-      function drawIndexCardBoundingBox(src, gray, blurred, edges, output) {
-        cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
-        cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0);
-        cv.Canny(blurred, edges, 50, 150);
-
-        let contours = new cv.MatVector();
-        let hierarchy = new cv.Mat();
-        cv.findContours(
-          edges,
-          contours,
-          hierarchy,
-          cv.RETR_EXTERNAL,
-          cv.CHAIN_APPROX_SIMPLE,
-        );
-
-        let maxArea = 0;
-        let maxContour = null;
-
-        for (let i = 0; i < contours.size(); i++) {
-          let contour = contours.get(i);
-          let area = cv.contourArea(contour);
-
-          if (area > maxArea) {
-            let approx = new cv.Mat();
-            cv.approxPolyDP(
-              contour,
-              approx,
-              0.02 * cv.arcLength(contour, true),
-              true,
-            );
-
-            if (approx.rows >= 3 && area > 10000) {
-              maxArea = area;
-              if (maxContour !== null) {
-                maxContour.delete();
-              }
-              maxContour = approx.clone();
-            }
-            approx.delete();
-          }
-        }
-
-        let finalContour = null;
-        if (maxContour && maxContour.rows >= 3) {
-          if (previousContour !== null) previousContour.delete();
-          previousContour = maxContour.clone();
-          finalContour = maxContour;
-          stabilityCounter = 0;
-        } else if (previousContour !== null && stabilityCounter < 15) {
-          finalContour = previousContour;
-          stabilityCounter++;
-        }
-
-        if (finalContour && finalContour.rows >= 3) {
-          let points = [];
-          for (let i = 0; i < finalContour.rows; i++) {
-            points.push(
-              new cv.Point(
-                finalContour.data32S[i * 2],
-                finalContour.data32S[i * 2 + 1],
-              ),
-            );
-          }
-
-          // Ensure points are sorted in the correct order: top-left, top-right, bottom-right, bottom-left
-          if (points.length === 4) {
-            points = sortPoints(points);
-          }
-
-          for (let i = 0; i < points.length; i++) {
-            cv.line(
-              output,
-              points[i],
-              points[(i + 1) % points.length],
-              [0, 255, 0, 255],
-              3,
-            );
-          }
-        }
-
-        cleanupMats([contours, hierarchy]);
-        if (maxContour && maxContour !== previousContour) maxContour.delete();
-      }
-
-      function sortPoints(points) {
-        // Sort points based on their x + y sum and differences
-        points.sort((a, b) => a.y - b.y || a.x - b.x);
-
-        let topPoints = points.slice(0, 2).sort((a, b) => a.x - b.x);
-        let bottomPoints = points.slice(2, 4).sort((a, b) => a.x - b.x);
-
-        return [topPoints[0], topPoints[1], bottomPoints[1], bottomPoints[0]];
-      }
-
-      function drawFiducialDots(mask, output) {
+      function drawFiducialOutput(mask, output) {
         let contours = new cv.MatVector();
         let hierarchy = new cv.Mat();
         cv.findContours(
@@ -408,6 +273,7 @@
       }
 
       function drawDots(output, centroid, index) {
+        // only draw debug stuff if we want it
         if (debugOutput) {
           let rect = cv.boundingRect(centroid.contour);
           let point1 = new cv.Point(rect.x, rect.y);
@@ -523,7 +389,7 @@
         for (let i = 0; i < contours.size(); i++) {
           let contour = contours.get(i);
           let area = cv.contourArea(contour);
-          if (area > 15 && area < 1000) {
+          if (area > 30 && area < 4000) {
             let moments = cv.moments(contour);
             let cx = moments.m10 / moments.m00;
             let cy = moments.m01 / moments.m00;
@@ -570,21 +436,53 @@
         <h2>Settings</h2>
         <select id="deviceOptions"></select>
         <input type="color" id="colorPicker" value="#8A1A7E" />
-        <label for="thresholdSlider"
-          >Threshold: <span id="thresholdValue">20</span></label
+        <label for="hueThresholdSlider"
+          >Hue Threshold: <span id="hueThresholdValue">70</span></label
         >
-        <input type="range" id="thresholdSlider" min="1" max="50" value="10" />
-        <label for="fpsSlider"
-          >FPS: <span id="fpsValue">10</span></label
+        <input
+          type="range"
+          id="hueThresholdSlider"
+          min="1"
+          max="100"
+          value="70"
+        />
+        <label for="satThresholdSlider"
+          >Sat Threshold: <span id="satThresholdValue">70</span></label
         >
+        <input
+          type="range"
+          id="satThresholdSlider"
+          min="1"
+          max="100"
+          value="70"
+        />
+        <label for="valThresholdSlider"
+          >Val Threshold: <span id="valThresholdValue">70</span></label
+        >
+        <input
+          type="range"
+          id="valThresholdSlider"
+          min="1"
+          max="100"
+          value="70"
+        />
+        <label for="fpsSlider">FPS: <span id="fpsValue">10</span></label>
         <input type="range" id="fpsSlider" min="1" max="30" value="10" />
         <button id="toggleProcessingButton">Pause Processing</button>
         <label
           ><input type="checkbox" id="rotateCheckbox" /> Rotate Output
           180°</label
         >
+        <label
+          ><input type="checkbox" id="whiteBalanceCheckbox" /> Auto White
+          Balance 180°</label
+        >
         <label><input type="checkbox" id="debugCheckbox" /> Debug View</label>
-        Video (click to select color)
+        OutputCanvas
+        <canvas id="outputCanvas" width="640" height="480"></canvas>
+        OutputCanvas2
+        <canvas id="outputCanvas2" width="640" height="480"></canvas>
+        Color Picker (click to select color)
         <video id="videoElement" width="640" height="480" autoplay></video>
         <canvas
           id="rawCanvas"
@@ -592,8 +490,6 @@
           height="480"
           style="display: none"
         ></canvas>
-        OutputCanvas
-        <canvas id="outputCanvas" width="640" height="480"></canvas>
       </div>
     </div>
   </body>

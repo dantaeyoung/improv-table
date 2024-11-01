@@ -10,7 +10,6 @@ slide_number = -1
 
 keynote_gotoslide_applescript_template = '''
 tell application "Keynote"
-    activate
     tell document 1
         set slideNumber to {slide_number} -- change to the specific slide you want
         set currentSlide to slide slideNumber
