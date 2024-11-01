@@ -77,9 +77,9 @@
     ></script>
     <script>
       let selectedColor = { h: 0, s: 0, v: 0 };
-      let hueThreshold = 70;
-      let satThreshold = 70;
-      let valThreshold = 70;
+      let hueThreshold = 60;
+      let satThreshold = 60;
+      let valThreshold = 60;
       let fps = 8;
       let src = null;
       let hsv = null;
@@ -238,7 +238,11 @@
         // Set a timeout to achieve 20fps (50ms per frame)
         const frameDelay = Math.max(0, 1000 / fps - elapsedTime);
         setTimeout(() => {
-          requestAnimationFrame(processFrame);
+          try {
+            requestAnimationFrame(processFrame);
+          } catch(e) {
+            console.error("ERror!", e);
+          }
         }, frameDelay);
       }
 
@@ -437,34 +441,34 @@
         <select id="deviceOptions"></select>
         <input type="color" id="colorPicker" value="#8A1A7E" />
         <label for="hueThresholdSlider"
-          >Hue Threshold: <span id="hueThresholdValue">70</span></label
+          >Hue Threshold: <span id="hueThresholdValue">60</span></label
         >
         <input
           type="range"
           id="hueThresholdSlider"
           min="1"
           max="100"
-          value="70"
+          value="60"
         />
         <label for="satThresholdSlider"
-          >Sat Threshold: <span id="satThresholdValue">70</span></label
+          >Sat Threshold: <span id="satThresholdValue">60</span></label
         >
         <input
           type="range"
           id="satThresholdSlider"
           min="1"
           max="100"
-          value="70"
+          value="60"
         />
         <label for="valThresholdSlider"
-          >Val Threshold: <span id="valThresholdValue">70</span></label
+          >Val Threshold: <span id="valThresholdValue">60</span></label
         >
         <input
           type="range"
           id="valThresholdSlider"
           min="1"
           max="100"
-          value="70"
+          value="60"
         />
         <label for="fpsSlider">FPS: <span id="fpsValue">10</span></label>
         <input type="range" id="fpsSlider" min="1" max="30" value="10" />
