@@ -355,14 +355,13 @@
           rightmostCentroid.y + 7
         );
 
-        // Use cv.putText to draw "hello world" on the `output`
         cv.putText(
           output,
           `${decimalValue}`,
           textPosition,
           cv.FONT_HERSHEY_SIMPLEX,
           0.8, // Font scale (adjust as needed)
-          [5, 5, 5, 5], // Text color in RGBA (white color)
+          [0, 225, 35, 225],
           2 // Thickness of the text
         );
       }
