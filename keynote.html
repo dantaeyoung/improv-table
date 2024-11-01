@@ -11,6 +11,11 @@
         padding: 0;
         height: 100%;
         width: 100%;
+        background-color: black;
+      }
+
+      body.presentationView {
+        overflow: hidden;
       }
 
       .presentationView #presentationCanvas {
@@ -40,6 +45,10 @@
         border: 1px solid red;
       }
 
+      #videoElement {
+        cursor: crosshair;
+      }
+
       canvas {
         max-width: 500px;
       }
@@ -65,9 +74,9 @@
       type="text/javascript"
     ></script>
     <script>
-      const fps = 8;
       let selectedColor = { h: 0, s: 0, v: 0 };
       let threshold = 10;
+      let fps = 8;
       let src = null;
       let hsv = null;
       let mask = null;
@@ -93,6 +102,8 @@
         const colorPicker = document.getElementById("colorPicker");
         const thresholdSlider = document.getElementById("thresholdSlider");
         const thresholdValue = document.getElementById("thresholdValue");
+        const fpsSlider = document.getElementById("fpsSlider");
+        const fpsValue = document.getElementById("fpsValue");
         const toggleProcessingButton = document.getElementById(
           "toggleProcessingButton",
         );
@@ -117,6 +128,11 @@
         thresholdSlider.addEventListener("input", (event) => {
           threshold = parseInt(event.target.value);
           thresholdValue.innerText = threshold;
+        });
+
+        fpsSlider.addEventListener("input", (event) => {
+          fps = parseInt(event.target.value);
+          fpsValue.innerText = fps;
         });
 
         rotateCheckbox.addEventListener("change", (event) => {
@@ -235,7 +251,6 @@
         cv.inRange(hsv, lowerBound, upperBound, mask);
         cv.GaussianBlur(mask, output, new cv.Size(5, 5), 0);
         cv.cvtColor(output, output, cv.COLOR_GRAY2BGR);
-
 
         //drawFiducialDots(mask, output);
         src.copyTo(presentationOutput);
@@ -552,19 +567,24 @@
         <canvas id="presentationCanvas" width="640" height="480"></canvas>
       </div>
       <div id="settings">
+        <h2>Settings</h2>
         <select id="deviceOptions"></select>
         <input type="color" id="colorPicker" value="#8A1A7E" />
         <label for="thresholdSlider"
           >Threshold: <span id="thresholdValue">10</span></label
         >
         <input type="range" id="thresholdSlider" min="1" max="50" value="10" />
+        <label for="fpsSlider"
+          >FPS: <span id="fpsValue">10</span></label
+        >
+        <input type="range" id="fpsSlider" min="1" max="30" value="10" />
         <button id="toggleProcessingButton">Pause Processing</button>
         <label
           ><input type="checkbox" id="rotateCheckbox" /> Rotate Output
           180°</label
         >
         <label><input type="checkbox" id="debugCheckbox" /> Debug View</label>
-        Video
+        Video (click to select color)
         <video id="videoElement" width="640" height="480" autoplay></video>
         <canvas
           id="rawCanvas"
