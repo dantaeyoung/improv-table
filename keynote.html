@@ -143,7 +143,6 @@
         channels.get(0).convertTo(channels.get(0), -1, gainB); // Blue channel
 
         // Step 4: Merge the adjusted channels back
-        //        let balancedImage = new cv.Mat();
         cv.merge(channels, src);
 
         // Step 5: Display the result on the canvas
@@ -152,7 +151,6 @@
 
         // Cleanup
         channels.delete();
-        //        balancedImage.delete();
       }
 
       function processFrame() {
@@ -160,77 +158,78 @@
 
         const startTime = Date.now(); // Record the start time of this frame
 
-        const video = document.getElementById("videoElement");
-        const canvas = document.getElementById("outputCanvas");
-        const context = canvas.getContext("2d", { willReadFrequently: true });
-
-        // Draw the video frame onto the canvas
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-        // Read the canvas into a src matrix
-        src = cv.imread(canvas);
-
-        if (rotateVideo) {
-          // Rotate the frame by 180 degrees
-          cv.rotate(src, src, cv.ROTATE_180);
-        }
-
-        if (whiteBalanceVideo) {
-          whiteBalanceCorrection(src);
-        }
-
-        hsv = new cv.Mat();
-        mask = new cv.Mat();
-        let output = new cv.Mat();
-        let gray = new cv.Mat();
-        let blurred = new cv.Mat();
-        let edges = new cv.Mat();
-        let presentationOutput = new cv.Mat();
-
-        cv.cvtColor(src, hsv, cv.COLOR_RGBA2RGB);
-        cv.cvtColor(hsv, hsv, cv.COLOR_RGB2HSV);
-
-        let lowerBound = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [
-          selectedColor.h - hueThreshold,
-          Math.max(0, selectedColor.s - satThreshold),
-          Math.max(0, selectedColor.v - valThreshold),
-          0,
-        ]);
-        let upperBound = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [
-          selectedColor.h + hueThreshold,
-          Math.min(255, selectedColor.s + satThreshold),
-          Math.min(255, selectedColor.v + valThreshold),
-          255,
-        ]);
-
-        cv.inRange(hsv, lowerBound, upperBound, mask);
-        cv.GaussianBlur(mask, output, new cv.Size(5, 5), 0);
-        cv.cvtColor(output, output, cv.COLOR_GRAY2BGR);
-
         try {
+
+          const video = document.getElementById("videoElement");
+          const canvas = document.getElementById("outputCanvas");
+          const context = canvas.getContext("2d", { willReadFrequently: true });
+
+          // Draw the video frame onto the canvas
+          context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+          // Read the canvas into a src matrix
+          src = cv.imread(canvas);
+
+          if (rotateVideo) {
+            // Rotate the frame by 180 degrees
+            cv.rotate(src, src, cv.ROTATE_180);
+          }
+
+          if (whiteBalanceVideo) {
+            whiteBalanceCorrection(src);
+          }
+
+          hsv = new cv.Mat();
+          mask = new cv.Mat();
+          let output = new cv.Mat();
+          let gray = new cv.Mat();
+          let blurred = new cv.Mat();
+          let edges = new cv.Mat();
+          let presentationOutput = new cv.Mat();
+
+          cv.cvtColor(src, hsv, cv.COLOR_RGBA2RGB);
+          cv.cvtColor(hsv, hsv, cv.COLOR_RGB2HSV);
+
+          let lowerBound = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [
+            selectedColor.h - hueThreshold,
+            Math.max(0, selectedColor.s - satThreshold),
+            Math.max(0, selectedColor.v - valThreshold),
+            0,
+          ]);
+          let upperBound = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [
+            selectedColor.h + hueThreshold,
+            Math.min(255, selectedColor.s + satThreshold),
+            Math.min(255, selectedColor.v + valThreshold),
+            255,
+          ]);
+
+          cv.inRange(hsv, lowerBound, upperBound, mask);
+          cv.GaussianBlur(mask, output, new cv.Size(5, 5), 0);
+          cv.cvtColor(output, output, cv.COLOR_GRAY2BGR);
+
           //drawFiducialOutput(mask, output);
           src.copyTo(presentationOutput);
           drawFiducialOutput(mask, presentationOutput);
           //drawIndexCardBoundingBox(src, gray, blurred, edges, output);
+
+          cv.imshow("outputCanvas", output);
+          cv.imshow("presentationCanvas", presentationOutput);
+
+          cleanupMats([
+            src,
+            hsv,
+            mask,
+            output,
+            presentationOutput,
+            lowerBound,
+            upperBound,
+            gray,
+            blurred,
+            edges,
+          ]);
         } catch (e) {
           console.error("Error!", e);
         }
-
-        cv.imshow("outputCanvas", output);
-        cv.imshow("presentationCanvas", presentationOutput);
-
-        cleanupMats([
-          src,
-          hsv,
-          mask,
-          output,
-          presentationOutput,
-          lowerBound,
-          upperBound,
-          gray,
-          blurred,
-          edges,
-        ]);
 
         // Calculate the elapsed time
         const elapsedTime = Date.now() - startTime;
@@ -238,11 +237,7 @@
         // Set a timeout to achieve 20fps (50ms per frame)
         const frameDelay = Math.max(0, 1000 / fps - elapsedTime);
         setTimeout(() => {
-          try {
-            requestAnimationFrame(processFrame);
-          } catch(e) {
-            console.error("ERror!", e);
-          }
+          requestAnimationFrame(processFrame);
         }, frameDelay);
       }
 
