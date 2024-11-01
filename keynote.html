@@ -80,6 +80,7 @@
       let hueThreshold = 60;
       let satThreshold = 60;
       let valThreshold = 60;
+      let dotBoundary = 350;
       let fps = 8;
       let src = null;
       let hsv = null;
@@ -88,10 +89,12 @@
       let stabilityCounter = 0;
       let videoStream = null;
       let isProcessing = true;
+      let lastSentDecimalValue = -1;
       let prevDecimalValue = -1;
       let prevDecimalTimeout;
       let rotateVideo = false;
       let whiteBalanceVideo = false;
+      let autoDotBoundary = false;
       let debugOutput = false;
       let presentationView = false;
 
@@ -159,7 +162,6 @@
         const startTime = Date.now(); // Record the start time of this frame
 
         try {
-
           const video = document.getElementById("videoElement");
           const canvas = document.getElementById("outputCanvas");
           const context = canvas.getContext("2d", { willReadFrequently: true });
@@ -249,7 +251,7 @@
           contours,
           hierarchy,
           cv.RETR_EXTERNAL,
-          cv.CHAIN_APPROX_SIMPLE,
+          cv.CHAIN_APPROX_SIMPLE
         );
         let dotCentroids = extractDotCentroids(contours);
         dotCentroids = analyzeDotAreas(dotCentroids);
@@ -284,7 +286,7 @@
 
           let textPoint = new cv.Point(
             rect.x + rect.width / 2 - 5,
-            rect.y + rect.height / 2 + 5,
+            rect.y + rect.height / 2 + 5
           );
           cv.putText(
             output,
@@ -293,7 +295,7 @@
             cv.FONT_HERSHEY_SIMPLEX,
             0.8,
             [0, 255, 0, 255],
-            2,
+            2
           );
           let labelPoint = new cv.Point(rect.x, rect.y - 10);
           cv.putText(
@@ -303,7 +305,7 @@
             cv.FONT_HERSHEY_SIMPLEX,
             0.5,
             [255, 0, 0, 255],
-            1,
+            1
           );
         }
 
@@ -332,7 +334,7 @@
             cv.FONT_HERSHEY_SIMPLEX,
             1.0,
             [0, 255, 255, 255],
-            2,
+            2
           );
         }
 
@@ -350,7 +352,7 @@
         // Define the position for the text (slightly to the right of the rightmost centroid)
         let textPosition = new cv.Point(
           rightmostCentroid.x + 26,
-          rightmostCentroid.y + 7,
+          rightmostCentroid.y + 7
         );
 
         // Use cv.putText to draw "hello world" on the `output`
@@ -361,7 +363,7 @@
           cv.FONT_HERSHEY_SIMPLEX,
           0.8, // Font scale (adjust as needed)
           [5, 5, 5, 5], // Text color in RGBA (white color)
-          2, // Thickness of the text
+          2 // Thickness of the text
         );
       }
 
@@ -369,16 +371,16 @@
         if (Number.isNaN(decimalValue)) {
           decimalValue = -1;
         }
-        if (decimalValue != prevDecimalValue) {
+        if (decimalValue !== prevDecimalValue) {
           prevDecimalValue = decimalValue;
 
           clearTimeout(prevDecimalTimeout);
 
-          if (decimalValue != -1) {
+          if (decimalValue !== -1 && decimalValue !== lastSentDecimalValue) {
             prevDecimalTimeout = setTimeout(function () {
-              //sendKeynoteCommand('next');
               sendKeynoteCommand("go_to_slide", decimalValue);
-            }, 200);
+              lastSentDecimalValue = decimalValue;
+            }, 300);
           }
         }
       }
@@ -401,19 +403,26 @@
       function analyzeDotAreas(dotCentroids) {
         let areas = dotCentroids.map((item) => item.area);
         areas.sort((a, b) => a - b);
-        let maxGapIndex = 0;
-        let maxGap = 0;
-        for (let i = 0; i < areas.length - 1; i++) {
-          let gap = areas[i + 1] - areas[i];
-          if (gap > maxGap) {
-            maxGap = gap;
-            maxGapIndex = i;
+
+        if(autoDotBoundary) {
+          console.log("sutodfdjsakflasj");
+          const dotBoundarySlider = document.getElementById("dotBoundarySlider");
+          let maxGapIndex = 0;
+          let maxGap = 0;
+          for (let i = 0; i < areas.length - 1; i++) {
+            let gap = areas[i + 1] - areas[i];
+            if (gap > maxGap) {
+              maxGap = gap;
+              maxGapIndex = i;
+            }
           }
-        }
-        let boundary = areas[maxGapIndex];
+          dotBoundary = areas[maxGapIndex];
+          dotBoundarySlider.value = dotBoundary;
+          dotBoundarySlider.dispatchEvent(new Event('input'));
+        } 
         return dotCentroids.map((item) => ({
           ...item,
-          area_large: item.area > boundary,
+          area_large: item.area > dotBoundary,
         }));
       }
 
@@ -465,6 +474,19 @@
           max="100"
           value="60"
         />
+        <label
+          ><input type="checkbox" id="autoDotBoundaryCheckbox" /> Auto Dot Boundary?
+        </label>
+        <label for="dotBoundarySlider"
+          >Dot Boundary: <span id="dotBoundaryValue">350</span></label
+        >
+        <input
+          type="range"
+          id="dotBoundarySlider"
+          min="10"
+          max="1000"
+          value="350"
+        />
         <label for="fpsSlider">FPS: <span id="fpsValue">10</span></label>
         <input type="range" id="fpsSlider" min="1" max="30" value="10" />
         <button id="toggleProcessingButton">Pause Processing</button>
@@ -474,7 +496,7 @@
         >
         <label
           ><input type="checkbox" id="whiteBalanceCheckbox" /> Auto White
-          Balance 180°</label
+          Balance (warning: memory leaks?)</label
         >
         <label><input type="checkbox" id="debugCheckbox" /> Debug View</label>
         OutputCanvas

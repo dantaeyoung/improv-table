@@ -7,6 +7,8 @@ function addEventListeners() {
   const satThresholdValue = document.getElementById("satThresholdValue");
   const valThresholdSlider = document.getElementById("valThresholdSlider");
   const valThresholdValue = document.getElementById("valThresholdValue");
+  const dotBoundarySlider = document.getElementById("dotBoundarySlider");
+  const dotBoundaryValue = document.getElementById("dotBoundaryValue");
   const fpsSlider = document.getElementById("fpsSlider");
   const fpsValue = document.getElementById("fpsValue");
   const toggleProcessingButton = document.getElementById(
@@ -14,6 +16,7 @@ function addEventListeners() {
   );
   const rotateCheckbox = document.getElementById("rotateCheckbox");
   const whiteBalanceCheckbox = document.getElementById("whiteBalanceCheckbox");
+  const autoDotBoundaryCheckbox = document.getElementById("autoDotBoundaryCheckbox");
   const debugCheckbox = document.getElementById("debugCheckbox");
   const presentCheckbox = document.getElementById("presentCheckbox");
 
@@ -46,6 +49,11 @@ function addEventListeners() {
     valThresholdValue.innerText = valThreshold;
   });
 
+  dotBoundarySlider.addEventListener("input", (event) => {
+    dotBoundary = parseInt(event.target.value);
+    dotBoundaryValue.innerText = dotBoundary;
+  });
+
   fpsSlider.addEventListener("input", (event) => {
     fps = parseInt(event.target.value);
     fpsValue.innerText = fps;
@@ -57,6 +65,10 @@ function addEventListeners() {
 
   whiteBalanceCheckbox.addEventListener("change", (event) => {
     whiteBalanceVideo = event.target.checked;
+  });
+
+  autoDotBoundaryCheckbox.addEventListener("change", (event) => {
+    autoDotBoundary = event.target.checked;
   });
 
   debugCheckbox.addEventListener("change", (event) => {
