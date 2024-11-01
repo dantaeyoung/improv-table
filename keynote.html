@@ -484,8 +484,8 @@
 
         // Define the position for the text (slightly to the right of the rightmost centroid)
         let textPosition = new cv.Point(
-          rightmostCentroid.x + 30,
-          rightmostCentroid.y + 10,
+          rightmostCentroid.x + 26,
+          rightmostCentroid.y + 7,
         );
 
         // Use cv.putText to draw "hello world" on the `output`
@@ -495,7 +495,7 @@
           textPosition,
           cv.FONT_HERSHEY_SIMPLEX,
           0.8, // Font scale (adjust as needed)
-          [255, 255, 255, 255], // Text color in RGBA (white color)
+          [5, 5, 5, 5], // Text color in RGBA (white color)
           2, // Thickness of the text
         );
       }
@@ -571,7 +571,7 @@
         <select id="deviceOptions"></select>
         <input type="color" id="colorPicker" value="#8A1A7E" />
         <label for="thresholdSlider"
-          >Threshold: <span id="thresholdValue">10</span></label
+          >Threshold: <span id="thresholdValue">20</span></label
         >
         <input type="range" id="thresholdSlider" min="1" max="50" value="10" />
         <label for="fpsSlider"
