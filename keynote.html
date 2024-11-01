@@ -5,9 +5,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Keynote Control</title>
     <style>
+      body,
+      html {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        width: 100%;
+      }
+
+      .presentationView #presentationCanvas {
+        position: absolute;
+        top: 5%;
+        left: 5%;
+        width: 90%;
+        height: 90%;
+        object-fit: contain;
+        max-width: 100vw;
+        max-height: 100vh;
+      }
+
+      #flex-container {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        padding: 10px;
+      }
       #settings {
         display: flex;
         flex-direction: column;
+        background-color: #eeeeee;
+        padding: 10px;
+        border-radius: 5px;
+        margin: 5px;
+        border: 1px solid red;
       }
 
       canvas {
@@ -35,7 +65,7 @@
       type="text/javascript"
     ></script>
     <script>
-      const fps = 10;
+      const fps = 8;
       let selectedColor = { h: 0, s: 0, v: 0 };
       let threshold = 10;
       let src = null;
@@ -177,15 +207,6 @@
           // Rotate the frame by 180 degrees
           cv.rotate(src, src, cv.ROTATE_180);
         }
-        /*
-            // Rotate the src matrix if the rotate checkbox is checked
-            if (rotateVideo) {
-                let rotatedSrc = new cv.Mat();
-                // Rotate 180 degrees
-                cv.rotate(src, rotatedSrc, cv.ROTATE_180);
-                src.delete();  // Clean up original src
-                src = rotatedSrc;  // Update src with the rotated version
-            } */
 
         hsv = new cv.Mat();
         mask = new cv.Mat();
@@ -215,6 +236,7 @@
         cv.GaussianBlur(mask, output, new cv.Size(5, 5), 0);
         cv.cvtColor(output, output, cv.COLOR_GRAY2BGR);
 
+
         //drawFiducialDots(mask, output);
         src.copyTo(presentationOutput);
         drawFiducialDots(mask, presentationOutput);
@@ -228,6 +250,7 @@
           hsv,
           mask,
           output,
+          presentationOutput,
           lowerBound,
           upperBound,
           gray,
@@ -435,7 +458,7 @@
 
         // Check if centroids is empty
         if (centroids.length === 0) {
-          console.error("Centroids list is empty.");
+          //console.log("Centroids list is empty.");
           return;
         }
 
@@ -521,6 +544,13 @@
   </head>
   <body>
     <div id="flex-container">
+      <div id="presentation">
+        <div id="pcheckbox">
+          <span class="label">Presentation View</span>
+          <input type="checkbox" id="presentCheckbox" />
+        </div>
+        <canvas id="presentationCanvas" width="640" height="480"></canvas>
+      </div>
       <div id="settings">
         <select id="deviceOptions"></select>
         <input type="color" id="colorPicker" value="#8A1A7E" />
@@ -544,13 +574,6 @@
         ></canvas>
         OutputCanvas
         <canvas id="outputCanvas" width="640" height="480"></canvas>
-      </div>
-      <div id="presentation">
-        <div id="pcheckbox">
-          <span class="label">Presentation View</span>
-          <input type="checkbox" id="presentCheckbox" />
-        </div>
-        <canvas id="presentationCanvas" width="640" height="480"></canvas>
       </div>
     </div>
   </body>
