@@ -19,3 +19,10 @@
 
 ## Improv Tables: Dots
 
+- Run `control-keynote.py` as a separate process.
+- Open `Keynote` in non-full-screen mode (in Fullscreen mode, browser activity is paused).
+- The page will detect a sequence of stamped dots.
+- Use the color picker at the bottom of the page to select the key color of the dots to be detected. Green is recommended as a color.
+- Use Hue/Saturation/Value sliders to control the tolerance of dot selection.
+- A sequence of large/small dots will be interpreted as binary, going right to left.
+- Newly detected binary codes will trigger Keynote to navigate to that slide (in decimal)
