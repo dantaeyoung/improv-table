@@ -1,231 +1,32 @@
+<!doctype html>
 <html>
-   <head>
-      <title>Improv Table</title>
-      <style>
-         html {
-            height: 100%;
-            margin: 0px;
-            padding: 0px;
-         }
+  <head>
+    <title>Improv Table</title>
+    <style>
+      html {
+        height: 100%;
+        margin: 0px;
+        padding: 0px;
+      }
 
-         body {
-            font-family: "Helvetica", Arial, sans-serif;
-            padding: 10px;
-         }
+      body {
+        font-family: "Helvetica", Arial, sans-serif;
+        padding: 10px;
+      }
 
-         video {
-            max-width: 80vw;
-            max-height: calc(50vh - 25px);
-            object-fit: contain;
-         }
-         .savedimage {
-            max-width: 80vw;
-            max-height: calc(50vh - 25px);
-            object-fit: contain;
-            margin-bottom: 20px;
-            padding-right: 15px;
-         }
+      a {
+        color: #888;
+      }
 
-         video,
-         .savedimage {
-            transform: rotate(180deg);
-         }
-
-         #ui {
-            position: fixed;
-            bottom: 10px;
-            left: 10px;
-         }
-
-         button {
-            border: 2px dotted white;
-            border-radius: 25px;
-            width: 40px;
-            height: 40px;
-            background-color: black;
-            color: white;
-            font-weight: bold;
-            font-size: 1em;
-         }
-
-
-         #videocontainer {
-            position: fixed;
-            bottom: 10px;
-            right: 15px;
-            pointer-events: none;
-         }
-
-         #savedimages {
-            display: flex;
-            flex-direction: row;
-            min-width: 100%;
-            align-items: center;
-            position: absolute;
-            top: 10px;
-            padding-right: 15px;
-         }
-
-         #logo {
-            display: none;
-         }
-
-
-         .big button#toggleBig {
-            background-color: white;
-            color: black;
-            border: 2px dotted black;
-         }
-
-         .big video {
-            max-width: 80vw;
-            max-height: calc(20vh - 25px);
-            object-fit: contain;
-         }
-         .big .savedimage {
-            max-width: 95vw;
-            max-height: calc(80vh - 25px);
-            object-fit: contain;
-            margin-bottom: 20px;
-            padding-right: 15px;
-         }
-
-      </style>
-   </head>
-   <body>
-      <br />
-      <div id="ui">
-         <div id="logo">
-            <b>GSAPP</b> Spring 2023<br />
-            <b>Metatool</b>: <b> Mediums for Improvisation</b><br />
-            <i>Dan Taeyoung</i>
-         </div>
-         <button title="Open Camera" id="startBtn" onclick="openCam()">O</button>
-         <button title="Capture frame" id="captureBtn" onclick="captureCam()">C</button>
-         <button title="Download images" id="downloadBtn" onclick="downloadImages()">S</button>
-         <button title="Toggle Big" id="toggleBig" onclick="toggleBig()">B</button>
-      </div>
-      <div id="videocontainer">
-         <video id="videoCam"></video>
-      </div>
-      <div id="savedimages"></div>
-      <script>
-         async function openCam() {
-            pid = await getContinuityCameraId();
-
-            navigator.mediaDevices
-               .getUserMedia({
-                  video: {
-                     width: 9999,
-                     deviceId: pid,
-                  },
-               })
-               .then((stream) => {
-                  let { width, height } = stream.getTracks()[0].getSettings();
-                  console.log(`${width}x${height}`); // 640x480
-
-                  var video = document.getElementById("videoCam");
-                  if ("srcObject" in video) {
-                     video.srcObject = stream;
-                  } else {
-                     video.src = window.URL.createObjectURL(stream);
-                  }
-                  video.onloadedmetadata = function (e) {
-                     video.play();
-                  };
-
-                  console.log(pid);
-               })
-               .catch(function (e) {
-                  console.log(e.name + ": " + e.message);
-               });
-         }
-
-         async function getContinuityCameraId() {
-            let preferredDeviceId = undefined;
-            const availableDevices =
-               await navigator.mediaDevices.enumerateDevices();
-            if (availableDevices.length > 1) {
-               for (let d of availableDevices) {
-                  if (d.kind === "videoinput" && d.label.includes("phone")) {
-                     //            console.log(d);
-                     preferredDeviceId = d.deviceId;
-                  }
-               }
-            }
-            return preferredDeviceId;
-         }
-
-         function capture(video, scaleFactor) {
-            if (scaleFactor == null) {
-               scaleFactor = 1;
-            }
-            var w = video.videoWidth * scaleFactor;
-            var h = video.videoHeight * scaleFactor;
-            var canvas = document.createElement("canvas");
-            canvas.className = "savedimage";
-            canvas.width = w;
-            canvas.height = h;
-            console.log(canvas);
-            var ctx = canvas.getContext("2d");
-            ctx.drawImage(video, 0, 0, w, h);
-            return canvas;
-         }
-
-         function captureCam() {
-            console.log("clicked capture");
-            var video = document.getElementById("videoCam");
-            var canvas = capture(video, 1);
-            document.getElementById("savedimages").appendChild(canvas);
-            window.scrollTo(0, document.body.scrollHeight);
-            document.body.scrollLeft = document.body.scrollWidth;
-         }
-
-         document.addEventListener("keypress", logKey);
-
-         function logKey(e) {
-            if (e.code === "Space") {
-               captureCam();
-            }
-         }
-
-         document.addEventListener("wheel", (e) => {
-            console.log(e.deltaY);
-            document.body.scrollLeft += e.deltaY;
-         });
-
-         function canvasDownload(canvas, filename) {
-            canvas.toBlob((blob) => {
-               var a = document.createElement("a"),
-                  url = URL.createObjectURL(blob);
-               a.href = url;
-               a.download = filename;
-               document.body.appendChild(a);
-               a.click();
-               setTimeout(function () {
-                  document.body.removeChild(a);
-                  window.URL.revokeObjectURL(url);
-               }, 0);
-            });
-         }
-
-         function downloadImages() {
-            let prefix = prompt("Please enter a prefix", "image-");
-
-            var images = document.getElementsByTagName("canvas");
-            Array.from(images).forEach((c, index) => {
-               canvasDownload(c, prefix + (index + 1) + ".png");
-            });
-         }
-
-         window.onbeforeunload = function () {
-            return "Are you sure you want to leave?";
-         };
-
-
-         function toggleBig() {
-            document.body.classList.toggle("big");
-         }
-      </script>
-   </body>
+      #bodycontainer {
+      }
+    </style>
+  </head>
+  <body>
+    <div id="bodycontainer">
+      <h1>Improv Tables</h1>
+      <h3><a href="sketching/">Improv Table: Sketching</a></h3>
+      <h3><a href="dots/">Improv Table: Dots</a></h3>
+    </div>
+  </body>
 </html>
